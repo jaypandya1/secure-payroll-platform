@@ -1,0 +1,108 @@
+name: Build, Test, and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tenant_tag:
+        description: Tenant to deploy to
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - Company
+          - Bureau
+          - Employee
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_NAME: secure-payroll-platform
+  AWS_REGION: eu-west-2
+
+jobs:
+  build_and_test:
+    name: Build and Test Container
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: docker
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-payroll-platform:test .
+
+      - name: Run container
+        run: docker run -d --rm --name secure-payroll-platform-test -p 8080:8080 secure-payroll-platform:test
+
+      - name: Wait for health endpoint
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:8080/health; then
+              exit 0
+            fi
+            echo "waiting for app to become healthy"
+            sleep 2
+          done
+          echo "health check failed"
+          docker logs secure-payroll-platform-test
+          exit 1
+
+      - name: Stop container
+        if: always()
+        run: docker stop secure-payroll-platform-test
+
+  deploy_to_ec2:
+    name: Deploy to EC2 via SSM
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tenant_tag:
+          - Company
+          - Bureau
+          - Employee
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Send deployment command to matching EC2 instances
+        env:
+          TENANT_FILTER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tenant_tag || 'all' }}
+        run: |
+          if [ "$TENANT_FILTER" != "all" ] && [ "$TENANT_FILTER" != "${{ matrix.tenant_tag }}" ]; then
+            echo "Skipping ${{ matrix.tenant_tag }} for tenant filter $TENANT_FILTER"
+            exit 0
+          fi
+
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy secure payroll platform for ${{ matrix.tenant_tag }}" \
+            --targets "Key=tag:Project,Values=${PROJECT_NAME}" "Key=tag:Environment,Values=dev" "Key=tag:Tenant,Values=${{ matrix.tenant_tag }}" \
+            --parameters commands='[
+              "set -e",
+              "sudo yum install -y git python3",
+              "if [ ! -d /opt/secure-payroll-platform/.git ]; then sudo rm -rf /opt/secure-payroll-platform && sudo git clone https://github.com/${{ github.repository }}.git /opt/secure-payroll-platform; else cd /opt/secure-payroll-platform && sudo git pull; fi",
+              "sudo pkill -f \"python3 docker/app.py\" || true",
+              "cd /opt/secure-payroll-platform && nohup python3 docker/app.py >/var/log/secure-payroll-platform.log 2>&1 &"
+            ]' \
+            --output text

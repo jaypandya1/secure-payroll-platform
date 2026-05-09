@@ -1,0 +1,11 @@
+name: Bureaus Terraform Workflow
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  validate:
+    uses: ./.github/workflows/deploy-companies.yaml
+    with:
+      tenant_label: bureaus
