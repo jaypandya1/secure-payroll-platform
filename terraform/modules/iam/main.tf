@@ -45,27 +45,27 @@ resource "aws_iam_role_policy" "company_inline" {
         Resource = [var.company_secret_arn]
       },
       {
-        Sid      = "ExplicitDenyOtherSecrets"
-        Effect   = "Deny"
-        Action   = ["secretsmanager:GetSecretValue"]
+        Sid    = "ExplicitDenyOtherSecrets"
+        Effect = "Deny"
+        Action = ["secretsmanager:GetSecretValue"]
         Resource = [
           var.bureau_secret_arn,
           var.employee_secret_arn
         ]
       },
       {
-        Sid      = "AllowOwnS3Prefix"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowOwnS3Prefix"
+        Effect = "Allow"
+        Action = [
           "s3:GetObject",
           "s3:PutObject"
         ]
         Resource = ["${var.s3_bucket_arn}/companies/*"]
       },
       {
-        Sid      = "AllowCloudWatchLogs"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowCloudWatchLogs"
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -118,27 +118,27 @@ resource "aws_iam_role_policy" "bureau_inline" {
         Resource = [var.bureau_secret_arn]
       },
       {
-        Sid      = "ExplicitDenyOtherSecrets"
-        Effect   = "Deny"
-        Action   = ["secretsmanager:GetSecretValue"]
+        Sid    = "ExplicitDenyOtherSecrets"
+        Effect = "Deny"
+        Action = ["secretsmanager:GetSecretValue"]
         Resource = [
           var.company_secret_arn,
           var.employee_secret_arn
         ]
       },
       {
-        Sid      = "AllowOwnS3Prefix"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowOwnS3Prefix"
+        Effect = "Allow"
+        Action = [
           "s3:GetObject",
           "s3:PutObject"
         ]
         Resource = ["${var.s3_bucket_arn}/bureaus/*"]
       },
       {
-        Sid      = "AllowCloudWatchLogs"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowCloudWatchLogs"
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -191,27 +191,27 @@ resource "aws_iam_role_policy" "employee_inline" {
         Resource = [var.employee_secret_arn]
       },
       {
-        Sid      = "ExplicitDenyOtherSecrets"
-        Effect   = "Deny"
-        Action   = ["secretsmanager:GetSecretValue"]
+        Sid    = "ExplicitDenyOtherSecrets"
+        Effect = "Deny"
+        Action = ["secretsmanager:GetSecretValue"]
         Resource = [
           var.company_secret_arn,
           var.bureau_secret_arn
         ]
       },
       {
-        Sid      = "AllowOwnS3Prefix"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowOwnS3Prefix"
+        Effect = "Allow"
+        Action = [
           "s3:GetObject",
           "s3:PutObject"
         ]
         Resource = ["${var.s3_bucket_arn}/employees/*"]
       },
       {
-        Sid      = "AllowCloudWatchLogs"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AllowCloudWatchLogs"
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"

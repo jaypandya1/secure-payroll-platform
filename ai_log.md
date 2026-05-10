@@ -1,71 +1,58 @@
-## Entry 1 — VPC Module (Task 1, Step 1)
+## AI Usage Log
 
-**Prompt:** I'm building AWS infrastructure for a UK payroll platform handling highly sensitive data — employee bank details, NI numbers, payroll records. I need a Terraform module for the VPC layer.
-Requirements:
+I used AI as an engineering accelerator, not as an authority. I relied on it to speed up drafting, gap analysis, and alternative design review, then I manually verified the output against the project requirements, corrected incorrect assumptions, and validated the final configuration with Terraform and workflow checks.
 
-1 VPC across 2 availability zones (eu-west-2a and eu-west-2b)
-2 public subnets (one per AZ) — for NAT Gateway only, no EC2 here
-6 private subnets (one per tenant per AZ) — Companies, Bureaus, Employees each get their own private subnet pair for compute isolation
-1 Internet Gateway attached to the VPC
-1 NAT Gateway in a public subnet so private instances can reach the internet outbound
-Proper route tables — public subnets route to IGW, private subnets route to NAT
-All resources tagged with Environment, Project, and Tenant where applicable
+## Entry 1 — VPC and network isolation design
 
-Use Terraform. Output the VPC ID, all subnet IDs, and the NAT Gateway ID. Use variables for CIDR blocks, region, and AZ names — no hardcoded values. Follow AWS naming conventions and structure it as a reusable module.
+**Prompt:** I was building AWS infrastructure for a UK payroll platform handling highly sensitive data and needed a Terraform VPC module with tenant-isolated private subnets, outbound internet access for private resources, and clean tagging/output conventions.
 
-**AI Output Summary:** Generated a VPC module with IGW, NAT Gateway, 
-6 private subnets across 2 AZs, and route tables.
+**What AI helped with:** It proposed the initial module structure for the VPC, public/private subnet layout, route tables, NAT gateway placement, and reusable variables/outputs.
 
-**What I took:** The overall module structure, route table associations, 
-and output blocks.
+**What I accepted:** The overall module shape, the idea of one public subnet per AZ for egress, and the pattern of exposing subnet IDs and gateway outputs cleanly to the root module.
 
-**What I rejected:** AI initially placed the NAT Gateway in the first 
-private subnet — this is wrong, NAT Gateways must live in a public subnet 
-to route outbound traffic through the IGW. Corrected this manually.
+**What I corrected manually:** I rejected an early placement that put the NAT gateway in a private subnet. I also added VPC Flow Logs and made sure the network model matched the assignment’s security intent, not just the minimum Terraform shape.
 
-**Follow-up prompt:** [paste the security auditor prompt]
+**Outcome:** A reusable VPC module with multi-AZ subnetting, internet egress, route tables, flow logs, and the tenant-aware foundation used by the rest of the stack.
 
-**AI response:** Flagged missing VPC Flow Logs — added a flow log resource 
-pointing to a CloudWatch log group as a result.
+## Entry 2 — Project completion and requirements traceability
 
-## Entry 2 — Project Completion Sweep
+**Prompt:** I asked AI to compare the repository against the assignment instructions and identify what was still missing.
 
-**Prompt:** I am working on this project make sure my terraform aligns with this instructions and also create all files required to finish this project
+**What AI helped with:** It surfaced gaps across documentation, monitoring, CI/CD, and operational runbooks, and helped prioritize the work that would matter most for a complete submission.
 
-**AI Output Summary:** Reviewed the Terraform modules, existing docs, and repo structure to identify missing project artifacts and the biggest gaps against the assignment.
+**What I accepted:** The project needed more than working Terraform; it also needed evidence of monitoring, incident response, deployment automation, and a clear record of design decisions.
 
-**What I took:** The existing VPC, EC2, RDS, IAM, S3, and security group structure; the project already had the core AWS foundations in place.
+**What I rejected:** I did not treat placeholder files as complete deliverables, and I did not rely on AI’s first pass as final without checking the repository state and assignment requirements.
 
-**What I rejected:** Empty or placeholder files were not enough to count as complete project deliverables, so I did not stop at structural presence alone.
+**Outcome:** I added the missing project artifacts, including documentation files, a usable Terraform variables example, and the operational pieces needed to present a finished system rather than a partial prototype.
 
-**Follow-up prompt:** can you check whats left in implementing the whole project and implement those actions
+## Entry 3 — Architecture review and manual diagram support
 
-**AI response:** Identified the VPC Flow Logs gap, added missing documentation files, and created a usable tfvars example for the repo.
+**Prompt:** I asked AI to describe the full architecture represented by the current Terraform state so I could draw it manually.
 
-## Entry 3 — Architecture Diagram and Workflow Completion
+**What AI helped with:** It summarized the dependency graph across VPC, subnets, NAT, EC2, RDS, S3, IAM, security groups, and monitoring, then translated that into a step-by-step drawing guide.
 
-**Prompt:** can you draw me the complete architecture that my current terraform state trying to create
+**What I accepted:** The dependency ordering and the tenant-isolation model were useful for creating a clean architecture diagram and for explaining the system coherently.
 
-**AI Output Summary:** Produced a full architecture diagram description covering the VPC, subnets, NAT, EC2, RDS, S3, IAM, and monitoring flow.
+**What I rejected:** I did not use a diagram that omitted security or monitoring. I kept the drawing aligned to the actual deployed topology and the assignment’s privacy expectations.
 
-**What I took:** The full-stack dependency map and the tenant-isolated network shape.
+**Outcome:** I produced a complete architecture view that I could reproduce manually and use in the final project documentation.
 
-**What I rejected:** A diagram that omitted the security and monitoring layers was not sufficient for the assignment.
+## Entry 4 — Final review against Project.pdf
 
-**Follow-up prompt:** I am drawing manually on eraser.io
+**Prompt:** I asked AI to review the project PDF against the repository and help close the remaining gaps.
 
-**AI response:** Converted the architecture explanation into step-by-step connection guidance for manual drawing.
+**What AI helped with:** It identified missing pieces around monitoring, compliance language, runbook content, and deployment workflow coverage.
 
-## Entry 4 — PDF Review and Finalization
+**What I accepted:** The final submission should show end-to-end thinking: infrastructure, app delivery, monitoring, incident handling, and compliance awareness.
 
-**Prompt:** Review the pdf Project.pdf and compare that with current project and finish project
+**What I rejected:** I did not accept a Terraform-only submission. I also corrected any suggestions that were too generic or not specific enough for a security-sensitive payroll system.
 
-**AI Output Summary:** Compared the PDF requirements against the repository and finished the missing deliverables.
+**Outcome:** I completed the remaining deliverables, then validated the repository with Terraform validation and workflow syntax checks so the final result was both documented and operationally sound.
 
-**What I took:** The required task areas: Terraform infra, multi-tenancy, security, CI/CD, monitoring, compliance, architecture diagram, and AI usage log.
+## How I used AI responsibly
 
-**What I rejected:** A repository with only Terraform without the documentation, workflows, and monitoring pieces was not complete enough for submission.
-
-**Follow-up prompt:** Review the pdf Project.pdf and compare that with current project and finish project
-
-**AI response:** Added network ACLs, monitoring alarms, SNS alerts, an architecture diagram file, a compliance section in the README, and a runbook focused on accidental public RDS exposure.
+- I used AI to accelerate exploration, not to replace engineering judgment.
+- I manually reviewed and corrected security-sensitive infrastructure decisions.
+- I validated the final work with tooling rather than assuming AI output was correct.
+- I kept the implementation aligned to the assignment requirements and the behavior of the actual AWS resources.

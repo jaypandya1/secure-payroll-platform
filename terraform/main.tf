@@ -37,9 +37,9 @@ module "vpc" {
 module "iam" {
   source = "./modules/iam"
 
-  aws_region          = var.aws_region
-  project             = var.project_name
-  environment         = var.environment
+  aws_region  = var.aws_region
+  project     = var.project_name
+  environment = var.environment
   # Note: Passing constructed ARN directly to avoid circular dependency with S3 module
   s3_bucket_arn       = "arn:aws:s3:::${var.s3_bucket_name}"
   company_secret_arn  = var.companies_secret_arn
@@ -60,46 +60,46 @@ module "security_groups" {
 module "ec2" {
   source = "./modules/ec2"
 
-  aws_region           = var.aws_region
-  project              = var.project_name
-  environment          = var.environment
-  
+  aws_region  = var.aws_region
+  project     = var.project_name
+  environment = var.environment
+
   # Injecting Subnets (Using the first AZ for each tenant)
-  company_subnet_id    = module.vpc.company_private_subnet_ids[0]
-  bureau_subnet_id     = module.vpc.bureau_private_subnet_ids[0]
-  employee_subnet_id   = module.vpc.employee_private_subnet_ids[0]
-  
+  company_subnet_id  = module.vpc.company_private_subnet_ids[0]
+  bureau_subnet_id   = module.vpc.bureau_private_subnet_ids[0]
+  employee_subnet_id = module.vpc.employee_private_subnet_ids[0]
+
   # Injecting Security Groups
-  company_sg_id        = module.security_groups.sg_companies_ec2_id
-  bureau_sg_id         = module.security_groups.sg_bureaus_ec2_id
-  employee_sg_id       = module.security_groups.sg_employees_ec2_id
-  
+  company_sg_id  = module.security_groups.sg_companies_ec2_id
+  bureau_sg_id   = module.security_groups.sg_bureaus_ec2_id
+  employee_sg_id = module.security_groups.sg_employees_ec2_id
+
   # Injecting IAM Profiles
   company_iam_profile  = module.iam.company_instance_profile_name
   bureau_iam_profile   = module.iam.bureau_instance_profile_name
   employee_iam_profile = module.iam.employee_instance_profile_name
-  
+
   # Injecting Secret ARNs
-  company_secret_arn   = var.companies_secret_arn
-  bureau_secret_arn    = var.bureaus_secret_arn
-  employee_secret_arn  = var.employees_secret_arn
+  company_secret_arn  = var.companies_secret_arn
+  bureau_secret_arn   = var.bureaus_secret_arn
+  employee_secret_arn = var.employees_secret_arn
 }
 
 # 5. RDS Module (Depends on VPC, SG)
 module "rds" {
   source = "./modules/rds"
 
-  project              = var.project_name
-  environment          = var.environment
-  db_name              = var.db_name
-  db_username          = var.db_username
-  
-  # Supplying two subnets for the DB subnet group
-  private_subnet_ids   = [
-    module.vpc.company_private_subnet_ids[0], 
-    module.vpc.bureau_private_subnet_ids[0]
+  project     = var.project_name
+  environment = var.environment
+  db_name     = var.db_name
+  db_username = var.db_username
+
+  # Use two Company private subnets across different AZs for RDS subnet group coverage
+  private_subnet_ids = [
+    module.vpc.company_private_subnet_ids[0],
+    module.vpc.company_private_subnet_ids[1]
   ]
-  
+
   db_security_group_id = module.security_groups.sg_rds_id
 }
 
@@ -107,9 +107,9 @@ module "rds" {
 module "s3" {
   source = "./modules/s3"
 
-  project           = var.project_name
-  environment       = var.environment
-  
+  project     = var.project_name
+  environment = var.environment
+
   # Passing Role ARNs to establish prefix-level bucket policies
   company_role_arn  = module.iam.company_role_arn
   bureau_role_arn   = module.iam.bureau_role_arn
@@ -168,8 +168,8 @@ resource "aws_cloudwatch_metric_alarm" "company_cpu" {
   dimensions = {
     InstanceId = module.ec2.company_instance_id
   }
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  ok_actions         = [aws_sns_topic.alerts.arn]
   treat_missing_data = "notBreaching"
 }
 
@@ -186,8 +186,8 @@ resource "aws_cloudwatch_metric_alarm" "bureau_cpu" {
   dimensions = {
     InstanceId = module.ec2.bureau_instance_id
   }
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  ok_actions         = [aws_sns_topic.alerts.arn]
   treat_missing_data = "notBreaching"
 }
 
@@ -204,8 +204,8 @@ resource "aws_cloudwatch_metric_alarm" "employee_cpu" {
   dimensions = {
     InstanceId = module.ec2.employee_instance_id
   }
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  ok_actions         = [aws_sns_topic.alerts.arn]
   treat_missing_data = "notBreaching"
 }
 
@@ -222,7 +222,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   dimensions = {
     DBInstanceIdentifier = module.rds.db_instance_identifier
   }
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
+  alarm_actions      = [aws_sns_topic.alerts.arn]
+  ok_actions         = [aws_sns_topic.alerts.arn]
   treat_missing_data = "notBreaching"
 }

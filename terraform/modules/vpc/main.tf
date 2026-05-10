@@ -13,6 +13,22 @@ data "aws_iam_policy_document" "vpc_flow_logs_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "vpc_flow_logs" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams"
+    ]
+
+    resources = ["*"]
+  }
+}
+
 # --- VPC ---
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -60,9 +76,10 @@ resource "aws_iam_role" "vpc_flow_logs" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "vpc_flow_logs" {
-  role       = aws_iam_role.vpc_flow_logs.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonVPCFlowLogsRole"
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name   = "${var.project}-${var.environment}-vpc-flow-logs-inline"
+  role   = aws_iam_role.vpc_flow_logs.id
+  policy = data.aws_iam_policy_document.vpc_flow_logs.json
 }
 
 resource "aws_flow_log" "vpc" {

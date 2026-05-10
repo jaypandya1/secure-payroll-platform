@@ -40,16 +40,16 @@ locals {
 
 # --- EC2 Instance: Companies ---
 resource "aws_instance" "company" {
-  ami                         = data.aws_ami.amazon_linux_2.id
-  
+  ami = data.aws_ami.amazon_linux_2.id
+
   # FREE TIER CONSTRAINT: t3.micro is used to stay within the AWS Free Tier limit of 750 hours per month.
-  instance_type               = var.instance_type
-  
-  subnet_id                   = var.company_subnet_id
-  vpc_security_group_ids      = [var.company_sg_id]
-  iam_instance_profile        = var.company_iam_profile
-  
- 
+  instance_type = var.instance_type
+
+  subnet_id              = var.company_subnet_id
+  vpc_security_group_ids = [var.company_sg_id]
+  iam_instance_profile   = var.company_iam_profile
+
+
   associate_public_ip_address = false
 
 
@@ -70,16 +70,16 @@ resource "aws_instance" "company" {
 
 # --- EC2 Instance: Bureaus ---
 resource "aws_instance" "bureau" {
-  ami                         = data.aws_ami.amazon_linux_2.id
-  
- 
-  instance_type               = var.instance_type
-  
-  subnet_id                   = var.bureau_subnet_id
-  vpc_security_group_ids      = [var.bureau_sg_id]
-  iam_instance_profile        = var.bureau_iam_profile
-  
-  
+  ami = data.aws_ami.amazon_linux_2.id
+
+
+  instance_type = var.instance_type
+
+  subnet_id              = var.bureau_subnet_id
+  vpc_security_group_ids = [var.bureau_sg_id]
+  iam_instance_profile   = var.bureau_iam_profile
+
+
   associate_public_ip_address = false
 
 
@@ -100,19 +100,19 @@ resource "aws_instance" "bureau" {
 
 # --- EC2 Instance: Employees ---
 resource "aws_instance" "employee" {
-  ami                         = data.aws_ami.amazon_linux_2.id
-  
- 
-  instance_type               = var.instance_type
-  
-  subnet_id                   = var.employee_subnet_id
-  vpc_security_group_ids      = [var.employee_sg_id]
-  iam_instance_profile        = var.employee_iam_profile
-  
- 
+  ami = data.aws_ami.amazon_linux_2.id
+
+
+  instance_type = var.instance_type
+
+  subnet_id              = var.employee_subnet_id
+  vpc_security_group_ids = [var.employee_sg_id]
+  iam_instance_profile   = var.employee_iam_profile
+
+
   associate_public_ip_address = false
 
-  
+
   root_block_device {
     volume_size = 8
     volume_type = "gp2"
