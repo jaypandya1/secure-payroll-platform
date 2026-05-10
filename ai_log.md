@@ -6,7 +6,7 @@ I used AI as an engineering accelerator, not as an authority. I relied on it to 
 
 **Prompt:** I was building AWS infrastructure for a UK payroll platform handling highly sensitive data and needed a Terraform VPC module with tenant-isolated private subnets, outbound internet access for private resources, and clean tagging/output conventions.
 
-**What AI helped with:** It proposed the initial module structure for the VPC, public/private subnet layout, route tables, NAT gateway placement, and reusable variables/outputs.
+**What AI helped with:** It proposed the initial module structure for the VPC, public/private subnet layout, route tables, NAT gateway placement, and reusable variables/outputs.###
 
 **What I accepted:** The overall module shape, the idea of one public subnet per AZ for egress, and the pattern of exposing subnet IDs and gateway outputs cleanly to the root module.
 
