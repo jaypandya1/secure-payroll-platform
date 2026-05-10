@@ -14,6 +14,7 @@ Terraform infrastructure for a UK payroll platform with tenant-isolated compute,
 - IAM roles and instance profiles for each tenant
 - Security groups for EC2, RDS, and SSM endpoint traffic
 - VPC Flow Logs to CloudWatch Logs
+- CloudTrail audit logging to a dedicated S3 bucket
 
 ## Repository layout
 
@@ -54,6 +55,13 @@ Terraform infrastructure for a UK payroll platform with tenant-isolated compute,
 1. Use AWS-native encryption, least-privilege IAM, Secrets Manager, CloudTrail, CloudWatch, and resource-level policies to protect PII and bank data.
 2. Keep the deployment in `eu-west-2` and avoid cross-region replication or data copies outside the UK/EU boundary.
 3. Implement a delete workflow that removes the employee record from the application layer, purges related S3 objects and backups where possible, revokes access, and records the action in audit logs.
+
+### Deletion workflow
+
+- The API exposes `DELETE /v1/employees/{employee_id}`.
+- The handler removes the employee from the in-memory registry, simulates tenant-scoped S3 object purge, and records deletion, purge, and access-revocation events in an audit log.
+- CloudTrail is enabled in Terraform with a dedicated audit trail and S3 bucket so infrastructure and API changes have an AWS-native audit record.
+- In production, the same flow should also revoke any downstream identities, delete persisted records, and confirm the erasure request in the incident log.
 
 ## Architecture diagram
 

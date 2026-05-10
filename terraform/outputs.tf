@@ -96,3 +96,13 @@ output "alerts_topic_arn" {
   description = "The SNS topic ARN used for platform alerts."
   value       = aws_sns_topic.alerts.arn
 }
+
+output "cloudtrail_bucket_name" {
+  description = "The S3 bucket name used for CloudTrail audit logs."
+  value       = aws_s3_bucket.cloudtrail.bucket
+}
+
+output "cloudtrail_trail_name" {
+  description = "The CloudTrail trail name for audit logging."
+  value       = aws_cloudtrail.trail.name
+}

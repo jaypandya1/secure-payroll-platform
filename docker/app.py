@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, Dict, List
 from urllib.parse import parse_qs, urlparse
@@ -66,6 +66,9 @@ PAYROLL_RUNS: List[PayrollRun] = [
 	PayrollRun("pr-2026-04-bureau", "bureau", "2026-04-01", "2026-04-30", "processed", 19, 98000, 76540),
 	PayrollRun("pr-2026-04-employee", "employee", "2026-04-01", "2026-04-30", "processing", 11, 58000, 45240),
 ]
+
+# Audit log for compliance and data deletion records (GDPR Art. 17 right to erasure)
+AUDIT_LOG: List[Dict[str, Any]] = []
 
 
 class PayrollAPIHandler(BaseHTTPRequestHandler):
@@ -139,6 +142,18 @@ class PayrollAPIHandler(BaseHTTPRequestHandler):
 			"payroll_run_count": len(PAYROLL_RUNS),
 		}
 
+	def _audit_log_event(self, action: str, tenant_id: str, resource_id: str, resource_type: str, details: Dict[str, Any] | None = None) -> None:
+		"""Record an audit event for compliance tracking (GDPR, UK GDPR, audit trail)."""
+		event = {
+			"timestamp": datetime.utcnow().isoformat() + "Z",
+			"action": action,
+			"tenant_id": tenant_id,
+			"resource_type": resource_type,
+			"resource_id": resource_id,
+			"details": details or {},
+		}
+		AUDIT_LOG.append(event)
+
 	def do_GET(self) -> None:
 		parsed = urlparse(self.path)
 		path = parsed.path.rstrip("/") or "/"
@@ -169,6 +184,7 @@ class PayrollAPIHandler(BaseHTTPRequestHandler):
 						"/v1/tenants/{tenant_id}",
 						"/v1/employees",
 						"/v1/employees/{employee_id}",
+						"DELETE /v1/employees/{employee_id}",
 						"/v1/payroll-runs",
 						"/v1/payroll-runs/{run_id}",
 						"/v1/payroll-runs?tenant_id=company",
@@ -277,6 +293,73 @@ class PayrollAPIHandler(BaseHTTPRequestHandler):
 				"note": "preview_only",
 			},
 		)
+
+	def do_DELETE(self) -> None:
+		"""Handle employee deletion (GDPR Article 17 right to erasure)."""
+		parsed = urlparse(self.path)
+		path = parsed.path.rstrip("/") or "/"
+
+		# Parse employee ID from /v1/employees/{employee_id}
+		if not path.startswith("/v1/employees/"):
+			self._write_json(404, {"error": "not_found"})
+			return
+
+		employee_id = path.split("/", 3)[3]
+		if not employee_id:
+			self._write_json(400, {"error": "employee_id_required"})
+			return
+
+		# Find and validate employee exists
+		employee = self._find_employee(employee_id)
+		if employee is None:
+			self._write_json(404, {"error": "employee_not_found"})
+			return
+
+		# Remove employee from in-memory store
+		EMPLOYEES.remove(employee)
+
+		# Log the deletion for audit trail
+		self._audit_log_event(
+			action="DELETE",
+			tenant_id=employee.tenant_id,
+			resource_id=employee_id,
+			resource_type="employee",
+			details={
+				"first_name": employee.first_name,
+				"last_name": employee.last_name,
+				"reason": "GDPR Article 17 - Right to Erasure",
+			},
+		)
+
+		# Simulate S3 object purge (in real deployment, would call s3:DeleteObject for all objects with prefix)
+		s3_prefix = f"s3://{PROJECT_NAME}/{employee.tenant_id}/{employee_id}/*"
+		self._audit_log_event(
+			action="PURGE_S3",
+			tenant_id=employee.tenant_id,
+			resource_id=employee_id,
+			resource_type="s3_objects",
+			details={
+				"s3_prefix": s3_prefix,
+				"status": "purged",
+			},
+		)
+
+		# Simulate access revocation (in real deployment, would revoke IAM policies)
+		self._audit_log_event(
+			action="REVOKE_ACCESS",
+			tenant_id=employee.tenant_id,
+			resource_id=employee_id,
+			resource_type="employee",
+			details={
+				"ec2_instance_access": "revoked",
+				"s3_access": "revoked",
+				"rds_access": "revoked",
+			},
+		)
+
+		# Return 204 No Content (successful deletion, no response body)
+		self.send_response(204)
+		self.end_headers()
 
 	def log_message(self, format: str, *args: Any) -> None:
 		return
